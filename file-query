@@ -1,0 +1,157 @@
+######
+#ABOUT: Script to list specific files in an arbitrary directory chosen by a user.
+#User is then able to either delete the files, or either copy/move them to another directory.
+# -SeanW
+#-----------VARIABLES-------------
+#$fdir: file directory chosen by user
+#$fstart: the initial letters of the filenames chosen by user.
+#$fext: the file extension of the filenames chosen by user.
+#$fcmd: when the user is prompted to move, copy or delete files, their decision is stored in this.
+#$fqArr: Array that holds the filenames specified by the user. These values are taken directly from the
+#	 textfile log, fqls.
+#$ndir: 'new directory' where the specified files will be moved or copied to.
+#
+#Argument 1 = fdir
+#Argument 2 = fstart
+#Argument 3 = fext
+#
+#-----------LOG FILES-------------
+#fqlog: text file where the filenames listed in all recorded sessions are held.
+#fqls: 'file-query last-session' records the files specified for THIS specific session.
+#	also used to keep track of what needs to be manipulated and stored in an array for processing
+#	during CURRENT session.
+#---------------------------------
+######
+
+clear
+        #Prints the help index.
+	if test $1 = -h ; then
+		echo "arguments : directory, beginning of file name, file extension."
+		echo "ie: $ file-query pictures a png"
+		exit 0
+	fi
+#------------------------Listing the files--------------------------#
+
+        #If arguments are given, skip the query process and just list the files.
+	if test $3 ; then
+
+		echo "These are the specified files: "
+		ls $1/$2*.$3
+		fdir=$1
+		fstart=$2
+		fext=$3
+
+	       #Print the files to a cumulative log (fqlog)
+	       #And a last-session log (fqls)
+		ls $fdir/$fstart*.$fext >> fqlog
+		ls $fdir/$fstar*.$fext > fqls
+
+        #Otherwise, query the user directly for input.
+	else
+
+	        #Specifies the directory to look into.
+		echo "What directory do you want to look in? Ex. pictures"
+			echo "Enter directory: "; read fdir
+	
+	        #Specifies the first letters of the files to look for.
+		echo "What should the files start with? Ex. a"
+			echo "Enter beginning of filename: "; read fstart
+	
+	        #Specifies the file extension. No period necessary; that is supplied in ls command.
+		echo "What file extension are you looking for? Ex. png"
+			echo "Enter file extension: "; read fext
+	
+	        #Returns specified files.
+		echo "These are the specified files: "
+			ls $fdir/$fstart*.$fext
+
+		       #print the files to a cumulative log (fqlog)
+		       #and a last-session log (fqls)
+			ls $fdir/$fstart*.$fext >> fqlog
+			ls $fdir/$fstart*.$fext > fqls
+	fi
+	
+	#Store the file names into an array from the current session's log.
+	
+	declare -a fqArr
+	#Read the text log (fqls) and add each line as a new element
+	#of the array.
+	while read line; do
+		fqArr+=( $line )
+	done < fqls
+
+#---------------------Manipulating the selected files--------------------#
+
+	echo "${#fqArr[*]} file(s) selected."
+	#Ask what to do with specified files.
+	echo ""
+	echo "What would you like to do with these file(s)?"
+	echo "1) move file(s) to another directory"
+	echo "2) copy file(s) to another directory"
+	echo "3) delete files"
+
+	read fcmd
+
+	#Option 1: MOVE FILES
+	if [ $fcmd -eq 1 ] ; then
+
+		echo "What directory should the files be moved to?"
+		read ndir
+		
+		#Move all items in the array to the specified directory.
+		for ((i = 0 ; i <= ${#fqArr[*] - 1} ; i++)) ; do
+
+			mv -i ${fqArr[$i]} $ndir
+
+		done
+		
+
+	#Option 2: COPY FILES TO ANOTHER DIRECTORY
+	elif [ $fcmd -eq 2 ] ; then
+
+		echo "What directory should the files be copied to?"
+		read ndir
+
+		#Copy all items in the array to the specified directory.
+		for ((i = 0 ; i <= ${#fqArr[*] - 1} ; i++)) ; do
+
+			cp ${fqArr[$i]} $ndir
+
+		done
+
+	#Option 3: DELETE FILES --CAREFUL--
+	elif [ $fcmd -eq 3 ] ; then
+		
+		#Ensure that the user really wants to delete the files.
+		echo "Are you sure you want to delete these files?"
+		echo "1) yes"
+		echo "2) no"
+
+		#Does the user want to delete the files?
+		read option
+
+		#1) if so, all files in the array are deleted.
+		if [ $option -eq 1 ] ; then
+			for ((i = 0 ; i <= ${#fqArr[*] - 1} ; i++)) ; do
+
+				rm ${fqArr[$i]}
+
+			done
+
+		#2) if not, no files are deleted and script ends.
+		elif [ $option -eq 2 ] ; then
+			echo "You have chosen not to delete any files."
+			exit 0
+
+		
+		#Anything else) Don't delete files, end script.
+		else
+			echo "Invalid option. File(s) were not deleted."
+		fi
+
+	#Invalid option: Alert the user and end script.
+	else
+		echo "Invalid option. Ending script."
+	fi
+	
+exit 0
