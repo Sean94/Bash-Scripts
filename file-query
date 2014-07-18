@@ -1,3 +1,4 @@
+#/bin/bash/
 ######
 #ABOUT: Script to list specific files in an arbitrary directory chosen by a user.
 #User is then able to either delete the files, or either copy/move them to another directory.
