@@ -33,7 +33,7 @@
 ###########
 
 clear
-	#If commandline arguments supplied, perform script action.
+	#If commandline arguments supplied, perform direct script action.
 	if test $2 ; then
 
 		#Copy first file's content to a text file
@@ -70,7 +70,8 @@ clear
 		#Alert user of completion.
 		echo "Addition successful. Exiting."
 	else
-
+	
+	#If no arguments are given, query user for information.
 	  #---------File to copy text from---------#
 
 		echo "What file would you like to copy? Give pathname."
