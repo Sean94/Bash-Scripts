@@ -1,0 +1,141 @@
+#/bin/bash
+###########
+# ABOUT: Script that allows for the addition of a text (or other) file's contents
+# to the beginning of another file. Pasting to the end of a file is an easy single-line
+# function, but pasting at the beginning is trickier.
+# Also allows for the deletion of duplicate lines when copying. Only the FIRST instance of
+# duplicate lines are kept, but order is maintained.
+#	-SeanW
+#
+#-----------Variables----------
+# $fFirst: The file whose contents will be copied.
+# $fSecond: The file to which the contents of the first file will
+#	    be written to.
+# $nDup: a storage variable to determine/count how many duplicate lines are held in the file.
+#	 This is used to determine whether it is necessary to ask the user whether they wish to
+#	 delete duplicate lines.
+#
+#-----------Arguments----------
+#
+# $1: functionality of fFirst - file to be copied
+# $2: functionality of fSecond - file to be copied to.
+# $3: Option to delete duplicate lines. must be "-d".
+#
+#-------------Files-------------
+#
+# paste-temp.txt: file that stores the contents of both files so that
+#		  the contents of fFirst can be 'written at the beginning'
+#		  of fSecond.
+# paste-temp2.txt: temporary file that holds information to transfer back to paste-temp.txt;
+#		   created if the user wants to delete duplicate lines. This file only holds
+#		   unique lines.
+#
+###########
+
+clear
+	#If commandline arguments supplied, perform script action.
+	if test $2 ; then
+
+		#Copy first file's content to a text file
+		cat $1 > paste-temp.txt
+
+		#Add new-line separator
+		echo "" >> paste-temp.txt
+
+		#Append second file's content to text file
+		cat $2 >> paste-temp.txt 
+		
+		#Discard duplicate lines?
+		if test $3 && test $3 = "-d"; then
+
+			##
+			#Parse through lines of file to find duplicates,
+			#only keep FIRST instance of the line.
+			#Store in new text file because overwriting with `awk` is
+			#not functional.
+			##
+			awk '!i[$0]++' paste-temp.txt > paste-temp2.txt
+
+			#rewrite old text file with new text file's content.
+			cat paste-temp2.txt > paste-temp.txt
+			#discard new text file.
+			rm paste-temp2.txt
+		fi
+		#Overwrite second text file with temporary text-file's contents
+		cat paste-temp.txt > $2
+
+		#Discard temporary text file
+		rm paste-temp.txt
+
+		#Alert user of completion.
+		echo "Addition successful. Exiting."
+	else
+
+	  #---------File to copy text from---------#
+
+		echo "What file would you like to copy? Give pathname."
+		
+		#Take user input
+		read fFirst
+
+		#Add the contents of the user-specified file
+		#to a temporary text file.
+		cat $fFirst > paste-temp.txt
+
+		# with a new-line separator.
+		echo "" >> paste-temp.txt
+	
+	  #---------File to copy text to---------#
+
+		echo "What file would you like to copy this to? Give pathname."
+
+		#Take user input
+		read fSecond
+		
+		#Add the contents of the user-specified file
+		#to the temporary text file.
+		cat $fSecond >> paste-temp.txt
+	  #---------Delete duplicate lines?------#
+		
+		#Use awk to look for duplicate lines.
+		nDup=`awk '!i[$0]++' paste-temp.txt`
+
+		#if any duplicate lines exist, ask if the user wants to delete them.
+		if [ ${#nDup} -ne 0 ] ; then
+			echo "Would you like to delete any duplicate lines?"
+			echo "If so, enter 'y'."
+			read dupAnswer
+
+			#Take any answer being yes, y, or Y.
+			if test $dupAnswer = "yes" || test $dupAnswer = "y" || test $dupAnswer = "Y" ; then
+				##
+				#Parse through lines of file to find duplicates,
+				#only keep FIRST instance of the line.
+				#Store in new text file because overwriting with `awk` is
+				#not functional.
+				##
+				awk '!i[$0]++' paste-temp.txt > paste-temp2.txt
+		
+				#rewrite old text file with new text file's content.
+				cat paste-temp2.txt > paste-temp.txt
+				#discard new text file.
+				rm paste-temp2.txt
+			else
+				echo "You have chosen not to delete duplicate lines."
+			fi
+		fi
+
+	  #----------Copying the text----------#
+
+		#Overwrite the second, user-specified file with the contents
+		#of the temporary text file.	
+		cat paste-temp.txt > $fSecond
+
+		#Discard the temporary text file.
+		rm paste-temp.txt
+
+		#Alert user of completion.
+		echo "Addition successful. Exiting."
+	fi
+
+exit 0
